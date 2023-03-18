@@ -119,6 +119,8 @@
             paddle.y += dy;
             paddle.y = Math.max(Math.min(paddle.y, canvas.height - paddleHeight), 0);
         }
+        
+        let difficulty = 0.5; // Schwierigkeitsfaktor zwischen 0 (einfach) und 1 (schwierig)
 
         function moveAiPaddle() {
             let paddleCenter = leftPaddle.y + paddleHeight / 2;
