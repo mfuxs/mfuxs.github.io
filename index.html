@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            margin: auto;
+            background-color: #000;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const paddleHeight = canvas.height / 4;
+        const paddleWidth = canvas.width / 40;
+        const ballSize = canvas.width / 40;
+
+        const leftPaddle = {
+            x: 10,
+            y: canvas.height / 2 - paddleHeight / 2,
+            score: 0
+        };
+        const rightPaddle = {
+            x: canvas.width - paddleWidth - 10,
+            y: canvas.height / 2 - paddleHeight / 2,
+            score: 0
+        };
+
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            dx: Math.random() * 4 - 2,
+            dy: Math.random() * 4 - 2
+        };
+
+        let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playPaddleHitSound() {
+            let oscillator = audioContext.createOscillator();
+            let gainNode = audioContext.createGain();
+
+            oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.5);
+
+            setTimeout(() => {
+                oscillator.stop();
+            }, 500);
+        }
+
+        function playWallHitSound() {
+            let oscillator = audioContext.createOscillator();
+            let gainNode = audioContext.createGain();
+
+            oscillator.frequency.setValueAtTime(660, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.3);
+
+            setTimeout(() => {
+                oscillator.stop();
+            }, 300);
+        }
+
+        function playScoreSound() {
+            let oscillator = audioContext.createOscillator();
+            let gainNode = audioContext.createGain();
+
+            oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 1);
+
+            setTimeout(() => {
+                oscillator.stop();
+            }, 1000);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#FFF';
+            ctx.fillRect(leftPaddle.x, leftPaddle.y, paddleWidth, paddleHeight);
+            ctx.fillRect(rightPaddle.x, rightPaddle.y, paddleWidth, paddleHeight);
+
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ballSize / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function movePaddle(paddle, dy) {
+            paddle.y += dy;
+            paddle.y = Math.max(Math.min(paddle.y, canvas.height - paddleHeight), 0);
+        }
+
+        function moveAiPaddle() {
+            let paddleCenter = leftPaddle.y + paddleHeight / 2;
+            let ballCenter = ball.y + ballSize / 2;
+            let reactionDistance = 35 + (1 - difficulty) * 50;
+            let speed = 2 + difficulty * 4;
+
+            if (ball.dx < 0) {
+                if (paddleCenter < ballCenter - reactionDistance) {
+                    movePaddle(leftPaddle, speed);
+                } else if (paddleCenter > ballCenter + reactionDistance) {
+                    movePaddle(leftPaddle, -speed);
+                }
+            }
+        }
+
+        function update() {
+            moveAiPaddle();
+
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            if (ball.y <= 0 || ball.y >= canvas.height - ballSize) {
+                ball.dy = -ball.dy;
+                playWallHitSound();
+            }
+
+            if ((ball.x <= leftPaddle.x + paddleWidth && ball.y + ballSize >= leftPaddle.y && ball.y <= leftPaddle.y + paddleHeight) ||
+                (ball.x + ballSize >= rightPaddle.x && ball.y + ballSize >= rightPaddle.y && ball.y <= rightPaddle.y + paddleHeight)) {
+                ball.dx = -ball.dx;
+                playPaddleHitSound();
+            }
+
+            if (ball.x < 0) {
+                rightPaddle.score++;
+                resetBall();
+                playScoreSound();
+                updateDifficulty();
+            } else if (ball.x > canvas.width - ballSize) {
+                leftPaddle.score++;
+                resetBall();
+                playScoreSound();
+                updateDifficulty();
+            }
+
+            draw();
+        }
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+
+            const touch = e.touches[0];
+            const touchY = touch.clientY;
+
+            if (touchY < canvas.height / 2) {
+                movePaddle(rightPaddle, -10);
+            } else {
+                movePaddle(rightPaddle, 10);
+            }
+        });
+
+        setInterval(update, 1000 / 60);
+    </script>
+</body>
+</html>
+
