@@ -19,7 +19,7 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     <script>
-        const canvas = document.getElementById('gameCanvas');
+    const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
         canvas.width = window.innerWidth;
@@ -46,6 +46,13 @@
             dx: Math.random() * 4 - 2,
             dy: Math.random() * 4 - 2
         };
+
+        let difficulty = 0.5;
+
+        function updateDifficulty() {
+            const scoreDifference = rightPaddle.score - leftPaddle.score;
+            difficulty = Math.max(0, Math.min(1, 0.5 + scoreDifference * 0.1));
+        }
 
         let audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -113,7 +120,12 @@
             ctx.beginPath();
             ctx.arc(ball.x, ball.y, ballSize / 2, 0, Math.PI * 2);
             ctx.fill();
+
+            ctx.font = '20px Arial';
+            ctx.fillText(leftPaddle.score, canvas.width / 4, 30);
+            ctx.fillText(rightPaddle.score, 3 * canvas.width / 4, 30);
         }
+
 
         function movePaddle(paddle, dy) {
             paddle.y += dy;
